@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -12,22 +12,57 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const { data: listener } = supabaseBrowser.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setCheckingSession(false);
+    });
+
+    // Check if already logged in
+    supabaseBrowser.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setCheckingSession(false);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // Redirect to dashboard when session exists
+  useEffect(() => {
+    if (!checkingSession && session) {
+      router.push("/dashboard");
+    }
+  }, [session, checkingSession, router]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
     setLoading(true);
+
     const { error } = await supabaseBrowser.auth.signInWithPassword({
       email,
       password,
     });
+
     setLoading(false);
+
     if (error) {
       setErr(error.message);
-      return;
     }
-    router.push("/dashboard");
+    // Session listener will handle redirect
   };
+
+  if (checkingSession) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto py-16 px-6">
