@@ -34,6 +34,7 @@ export default function AddTradeForm({ onTradeAdded }: { onTradeAdded: () => voi
         exit_price: exitPrice,
         quantity,
         notes,
+        trade_date: new Date().toISOString(), // 👈 add timestamp here
       },
     ]);
 
