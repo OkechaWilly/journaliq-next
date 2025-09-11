@@ -1,58 +1,49 @@
+// app/dashboard/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-import AddTradeForm from "@/components/AddTradeForm";
-import TradeList from "@/components/TradeList";
+import Sidebar from "@/components/Sidebar";
+import Topbar from "@/components/Topbar";
+import KpiCard from "@/components/KpiCard";
+import LineChartCard from "@/components/LineChartCard";
+import BarChartCard from "@/components/BarChartCard";
+import TradeTable from "@/components/TradeTable";
+import CalendarView from "@/components/CalendarView";
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [refresh, setRefresh] = useState(false);
-
-  useEffect(() => {
-    const { data: listener } = supabaseBrowser.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    supabaseBrowser.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!loading && !session) {
-      router.push("/auth/sign-in");
-    }
-  }, [session, loading, router]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p>Loading dashboard...</p>
-      </div>
-    );
-  }
-
-  if (!session) return null;
-
   return (
-    <div className="max-w-4xl mx-auto py-16 px-6">
-      <h1 className="text-3xl font-bold mb-6">Welcome to JournalIQ Dashboard</h1>
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
 
-      {/* Trade form */}
-      <AddTradeForm onTradeAdded={() => setRefresh(!refresh)} />
+      <main className="flex-1 p-6">
+        <Topbar />
 
-      {/* Trade list */}
-      <div className="mt-6">
-        <TradeList key={refresh ? "r1" : "r0"} />
-      </div>
+        {/* KPI cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <KpiCard label="Net P&L" value="$2,743.63" />
+          <KpiCard label="Win %" value="68.42%" />
+          <KpiCard label="Profit Factor" value="8.71" />
+          <KpiCard label="Avg Win/Loss" value="4.02" />
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <LineChartCard />
+          <BarChartCard />
+        </div>
+
+        {/* Recent trades + calendar */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h2 className="text-lg font-semibold mb-3">Recent Trades</h2>
+            <TradeTable />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold mb-3">P&L Calendar</h2>
+            <CalendarView />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
